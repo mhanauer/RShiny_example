@@ -4,8 +4,15 @@ library(shiny)
 ui <- fluidPage(
     titlePanel("Title panel"),
     sidebarLayout(position = "right",
-                  sidebarPanel("sidebar panel"),
-                  mainPanel("main panel")
+                  sidebarPanel("Sidebar Name", sliderInput("obs", "Number of observations:",  
+                                                           min = 1, max = 1000, value = 500)),
+                  mainPanel(h1("First Level"),
+                            h2("Second Level", align = "center"),
+                            p("New text"), 
+                            strong("bolded text"),
+                            br(),
+                            p("text after break"), 
+                            img(src = "download.jpeg"))
 )
 )
 
