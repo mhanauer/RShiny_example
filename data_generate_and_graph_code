@@ -28,7 +28,13 @@ reasses_bin = sample(reasses_target_samp, size = 100, replace = TRUE)
 enroll_bin = sample(reasses_target_samp, size = 100, replace = TRUE)
 
 date = c(rep("01-01-2019", 10), rep("02-01-2019", 10), rep("03-01-2019", 10), rep("04-01-2019", 10), rep("05-01-2019", 10), rep("06-01-2019", 10), rep("07-01-2019", 10), rep("08-01-2019", 10), rep("09-01-2019", 10), rep("10-01-2019", 10))
+
 shiny_dat = data.frame(reasses_bin, enroll_bin, phq_9_pre, phq_9_post, gad_7_pre, gad_7_post, id, date)
+### Create change scores for plot over time
+shiny_dat$phq_9_change = shiny_dat$phq_9_post-phq_9_pre
+shiny_dat$gad_7_change = shiny_dat$gad_7_post-gad_7_pre
+### Create a change score
+
 write.csv(shiny_dat, "shiny_dat.csv", row.names = FALSE)
 ```
 Do a line plot for phq-9, GAD-7, and DAST Scores over time
@@ -40,25 +46,55 @@ setwd("~/Desktop/table_app/data")
 shiny_dat = read.csv("shiny_dat.csv", header = TRUE)
 shiny_dat_month = shiny_dat %>%
   mutate(date = mdy(date)) %>%
-  group_by(month=floor_date(date, "month")) %>%
-  summarize(mean_phq_9_change=mean(phq_9_change))
+  select(date, phq_9_change, gad_7_change) 
+shiny_dat_month
+shiny_dat_month =  data.frame(outcome_change = c(rbind(phq_9_change, gad_7_change)), date = rep(shiny_dat_month$date, 2), outcome_type = c(rep("phq_9", dim(shiny_dat)[1]), rep("gad_7", dim(shiny_dat)[1])))
 
-ggplot(shiny_dat_month, aes(x = month, y = mean_phq_9_change)) + 
-                              geom_line() + 
-                              geom_point() +
-  labs(title="Reductions in average change (post - pre) ", y = "Average PHQ-9 Change", x = "Month")
+shiny_dat_month = shiny_dat_month %>%
+  mutate(date = floor_date(date, "month")) %>%
+  group_by(date, outcome_type) %>%
+  summarise(outcome_change_mean = mean(outcome_change))
+
+ggplot(shiny_dat_month, aes(x = date, y = outcome_change_mean, colour = outcome_type)) + 
+  geom_line() + 
+  geom_point() +
+  labs(title="Changes in average PHQ-9 and GAD-7 Scores from Jan-19 to Oct-19", y = "Average Outcome Change", x = "Month")
+
 ```
 Clevland plot
-Get the data into means first
+
 ```{r}
-phq_pre_mean = round(mean(shiny_dat$phq_9_pre),2)
-phq_post_mean = round(mean(shiny_dat$phq_9_post),2)
-phq_pre_post_mean = data.frame(phq_mean = rbind(phq_pre_mean, phq_post_mean))
-phq_pre_post_mean$pre_post = c("pre", "post")
-phq_pre_post_mean
-ggplot(phq_pre_post_mean, aes(phq_mean, pre_post)) +
-        geom_line(aes(group = pre_post)) +
-        geom_point(aes(color = phq_mean))
+
+
+self_worth_pre_mean = round(mean(shiny_dat$phq_9_pre),2)
+self_worth_post_mean = round(mean(shiny_dat$phq_9_post),2)+3
+
+## GAD-7
+grit_pre_mean = round(mean(shiny_dat$gad_7_pre),2)
+grit_post_mean = round(mean(shiny_dat$gad_7_post),2)+3
+
+dat_mean = data.frame(dat_mean_all = rbind(self_worth_pre_mean, self_worth_post_mean, grit_pre_mean, grit_post_mean))
+dat_mean$pre_post = c("pre", "post", "pre", "post")
+dat_mean$type = c("self_worth", "self_worth", "grit", "grit")
+dat_mean
+```
+Create the Cleveland chart
+```{r}
+## City = type; Gender = pre_post
+library(ggtext)
+ggplot(dat_mean, aes(dat_mean_all, type, label = dat_mean_all)) +
+        geom_line(aes(group = type)) +
+        geom_point(aes(color = pre_post, size = 4)) +
+        scale_color_manual(values=c("#346299", "#ff8c00")) +
+        geom_text(aes(label = dat_mean_all, colour = pre_post), position=position_dodge(width=0.5), vjust=-0.10) +
+    theme_classic() +
+    labs(title="Improvements in both outcomes", y = "Outcome type", x = "Outcome amount") +
+    labs(color = "Pre and Post") +
+    theme(legend.position = "none") +
+    labs(title = "Difference in<span style='color:#ff8c00'> Pre</span> and 
+    <span style='color:#346299'>Post</span> outcome scores") +
+    theme(plot.title = element_markdown())+
+    theme(axis.title.x = element_blank(),axis.title.y = element_blank(), axis.text.x = element_blank(), axis.ticks =  element_blank())
 ```
 
 
