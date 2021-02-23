@@ -58,14 +58,16 @@ shiny_dat_month = shiny_dat_month %>%
 ggplot(shiny_dat_month, aes(x = date, y = outcome_change_mean, colour = outcome_type)) + 
   geom_line() + 
   geom_point() +
-  labs(title="Changes in average PHQ-9 and GAD-7 Scores from Jan-19 to Oct-19", y = "Average Outcome Change", x = "Month")
+  theme_classic() +
+  labs(title="Changes in average PHQ-9 and GAD-7 Scores from Jan-19 to Oct-19", y = "Average Outcome Change", x = "Month")+
+  theme(legend.position = "none") +
+  theme(plot.title = element_markdown())
 
 ```
-Clevland plot
-
+Create the Cleveland chart
 ```{r}
-
-
+## City = type; Gender = pre_post
+###### Preping data
 self_worth_pre_mean = round(mean(shiny_dat$phq_9_pre),2)
 self_worth_post_mean = round(mean(shiny_dat$phq_9_post),2)+3
 
@@ -77,11 +79,12 @@ dat_mean = data.frame(dat_mean_all = rbind(self_worth_pre_mean, self_worth_post_
 dat_mean$pre_post = c("pre", "post", "pre", "post")
 dat_mean$type = c("self_worth", "self_worth", "grit", "grit")
 dat_mean
-```
-Create the Cleveland chart
-```{r}
-## City = type; Gender = pre_post
+####################3
 library(ggtext)
+dat_mean = dat_mean %>%
+  mutate(type = case_when(type == "self_worth" ~ "Self Worth", 
+          type == "grit" ~ "Grit"))
+
 ggplot(dat_mean, aes(dat_mean_all, type, label = dat_mean_all)) +
         geom_line(aes(group = type)) +
         geom_point(aes(color = pre_post, size = 4)) +
