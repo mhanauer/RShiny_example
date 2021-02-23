@@ -59,10 +59,11 @@ ggplot(shiny_dat_month, aes(x = date, y = outcome_change_mean, colour = outcome_
   geom_line() + 
   geom_point() +
   theme_classic() +
-  labs(title="Changes in average PHQ-9 and GAD-7 Scores from Jan-19 to Oct-19", y = "Average Outcome Change", x = "Month")+
+  labs(title="Changes in average<span style='color:#ff8c00'> PHQ-9</span> and 
+    <span style='color:#346299'>GAD-7</span> outcome scores from Jan-19 to Oct-19", y = "Average Outcome Change", x = "Month")+
   theme(legend.position = "none") +
-  theme(plot.title = element_markdown())
-
+  scale_color_manual(values=c("#346299", "#ff8c00")) +
+  theme(plot.title = element_markdown(), axis.title.y = element_blank()) 
 ```
 Create the Cleveland chart
 ```{r}
@@ -99,5 +100,3 @@ ggplot(dat_mean, aes(dat_mean_all, type, label = dat_mean_all)) +
     theme(plot.title = element_markdown())+
     theme(axis.title.x = element_blank(),axis.title.y = element_blank(), axis.text.x = element_blank(), axis.ticks =  element_blank())
 ```
-
-
