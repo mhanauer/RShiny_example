@@ -1,0 +1,48 @@
+---
+title: "Test"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Create the data set for the RShiny Application
+```{r}
+library(lubridate)
+reasses_target_samp =  c(1,0)
+# The range for the total scores are 0 to 27, but only allowing for the selection of up to 2, because I want to subtract 2, from the post to show a reduction pre and post
+phq_9_change_samp = c(2:27)
+revenue = abs(rnorm(mean = 10000, sd = 2000, n = 100))
+phq_9_pre = sample(phq_9_change_samp, size = 100, replace = TRUE)
+## Minus 1 and 2 to reduce the effects
+phq_9_post = sample(phq_9_change_samp, size = 50, replace = TRUE)-2
+phq_9_post = sample(phq_9_change_samp, size = 50, replace = TRUE)-1
+id = 1:100
+reasses_bin = sample(reasses_target_samp, size = 100, replace = TRUE)
+enroll_bin = sample(reasses_target_samp, size = 100, replace = TRUE)
+
+date = c(rep("01-01-2019", 10), rep("02-01-2019", 10), rep("03-01-2019", 10), rep("04-01-2019", 10), rep("05-01-2019", 10), rep("06-01-2019", 10), rep("07-01-2019", 10), rep("08-01-2019", 10), rep("09-01-2019", 10), rep("10-01-2019", 10))
+shiny_dat = data.frame(reasses_bin, enroll_bin, phq_9_pre, phq_9_post, id, date)
+write.csv(shiny_dat, "shiny_dat.csv", row.names = FALSE)
+```
+So what would the plot look like for for PHQ-9 Scores
+Let's a plot 
+```{r}
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+setwd("~/Desktop/table_app/data")
+shiny_dat = read.csv("shiny_dat.csv", header = TRUE)
+shiny_dat_month = shiny_dat %>%
+  mutate(date = mdy(date)) %>%
+  group_by(month=floor_date(date, "month")) %>%
+  summarize(mean_phq_9_change=mean(phq_9_change))
+
+ggplot(shiny_dat_month, aes(x = month, y = mean_phq_9_change)) + 
+                              geom_line() + 
+                              geom_point() +
+  labs(title="Reductions in average change (post - pre) ", y = "Average PHQ-9 Change", x = "Month")
+
+```
+
+
