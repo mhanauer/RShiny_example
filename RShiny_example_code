@@ -1,26 +1,62 @@
-library(shiny)
+library(shinydashboard)
+library(lubridate)
+###### Preprocess data for time series plot
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+setwd("~/Desktop/table_app/data")
+shiny_dat = read.csv("shiny_dat.csv", header = TRUE)
+shiny_dat_month = shiny_dat %>%
+  mutate(date = mdy(date)) %>%
+  select(date, phq_9_change, gad_7_change) 
+shiny_dat_month =  data.frame(outcome_change = c(rbind(phq_9_change, gad_7_change)), date = rep(shiny_dat_month$date, 2), outcome_type = c(rep("phq_9", dim(shiny_dat)[1]), rep("gad_7", dim(shiny_dat)[1])))
+shiny_dat_month = shiny_dat_month %>%
+  mutate(date = floor_date(date, "month")) %>%
+  group_by(date, outcome_type) %>%
+  summarise(outcome_change_mean = mean(outcome_change))
 
-# Define UI ----
-ui <- fluidPage(
-    titlePanel("Title panel"),
-    sidebarLayout(position = "right",
-                  sidebarPanel("Sidebar Name", sliderInput("obs", "Number of observations:",  
-                                                           min = 1, max = 1000, value = 500)),
-                  mainPanel(h1("First Level"),
-                            h2("Second Level", align = "center"),
-                            p("New text"), 
-                            strong("bolded text"),
-                            br(),
-                            p("text after break"), 
-                            img(src = "download.jpeg"))
+###################
+## Finished preprocessing data
+####################
+ui <- dashboardPage(
+  dashboardHeader(title = "Basic dashboard"),
+  dashboardSidebar(),
+  dashboardBody(
+    fluidRow(
+      # A static valueBox
+      valueBox(paste0(sum(shiny_dat$reasses_bin), "%"), "Reassesment Rate", icon = icon("award")),
+      valueBox(paste0(sum(shiny_dat$enroll_bin), "%"), "Enrollment Rate", icon = icon("battery-half")),
+      plotOutput("plot", width = "400px"),
+      plotOutput("plot1", width = "400px")
+    )
+  )
 )
-)
-
-
-# Define server logic ----
 server <- function(input, output) {
-    
+  output$plot <- renderPlot(ggplot(shiny_dat_month, aes(x = date, y = outcome_change_mean, colour = outcome_type)) + 
+                              geom_line() + 
+                              geom_point() +
+                              labs(title ="Changes \n in average<span style='color:#ff8c00'> PHQ-9</span> and 
+    <span style='color:#346299'>GAD-7</span> scores \n", subtitle = "From Jan-19 to Oct-19",  y = "Average Outcome Change", x = "Month")+
+                              theme(legend.position = "none") +
+                              theme(plot.title = element_markdown(), axis.title.y = element_blank())+
+                              scale_color_manual(values=c("#346299", "#ff8c00")) +
+                              ylim(-10,10) +
+                              theme(text=element_text(family="Verdana", face="bold", size=12))+
+                              labs(title = title_text))
+  output$plot1 = renderPlot(ggplot(dat_mean, aes(dat_mean_all, type, label = dat_mean_all)) +
+                              geom_line(aes(group = type)) +
+                              geom_point(aes(color = pre_post, size = 4)) +
+                              scale_color_manual(values=c("#346299", "#ff8c00")) +
+                              geom_text(aes(label = dat_mean_all, colour = pre_post), position=position_dodge(width=0.5), vjust=-0.10) +
+                              labs(title="Improvements in both outcomes", y = "Outcome type", x = "Outcome amount") +
+                              labs(color = "Pre and Post") +
+                              theme(legend.position = "none") +
+                              labs(title = "Difference\nin<span style='color:#ff8c00'> Pre</span> and 
+    <span style='color:#346299'>Post</span> outcome scores") +
+                              theme(plot.title = element_markdown())+
+                              theme(axis.title.x = element_blank(),axis.title.y = element_blank(), axis.text.x = element_blank(), axis.ticks =  element_blank()) +
+                              theme(text=element_text(family="Verdana", face="bold", size=12)))
 }
 
-# Run the app ----
-shinyApp(ui = ui, server = server)
+shinyApp(ui, server)
+
